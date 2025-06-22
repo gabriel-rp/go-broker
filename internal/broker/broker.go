@@ -33,7 +33,15 @@ type Queue struct {
 	RunningJobs   map[uuid.UUID]QueueJob
 }
 
-var Queues map[string]*Queue = make(map[string]*Queue)
+type Broker struct {
+	Queues map[string]*Queue
+}
+
+func NewBroker() Broker {
+	return Broker{
+		Queues: make(map[string]*Queue),
+	}
+}
 
 func NewQueueJob(job Job) QueueJob {
 	return QueueJob{
@@ -70,8 +78,8 @@ func (q *Queue) CompleteJob(uuid uuid.UUID, status JobStatus) error {
 		return fmt.Errorf("Job not found: '%v'", uuid)
 	}
 	if status != JobStatusSucceeded {
-		q.CompletedJobs = append(q.CompletedJobs, queueJob)
 		delete(q.RunningJobs, uuid)
+		q.PendingJobs.Push(queueJob)
 		return nil
 	}
 
@@ -80,17 +88,17 @@ func (q *Queue) CompleteJob(uuid uuid.UUID, status JobStatus) error {
 	return nil
 }
 
-func CreateQueue(queueName string) error {
-	if _, ok := Queues[queueName]; ok {
+func (b *Broker) CreateQueue(queueName string) error {
+	if _, ok := b.Queues[queueName]; ok {
 		return errors.New("Queue already exists")
 	}
 	newQueue := NewQueue(queueName)
-	Queues[queueName] = &newQueue
+	b.Queues[queueName] = &newQueue
 	return nil
 }
 
-func GetQueue(queueName string) (*Queue, error) {
-	queue, ok := Queues[queueName]
+func (b *Broker) GetQueue(queueName string) (*Queue, error) {
+	queue, ok := b.Queues[queueName]
 	if ok {
 		return queue, nil
 	} else {
@@ -98,16 +106,16 @@ func GetQueue(queueName string) (*Queue, error) {
 	}
 }
 
-func ListQueues() []string {
+func (b *Broker) ListQueues() []string {
 	queueNames := make([]string, 0)
-	for queueName := range Queues {
+	for queueName := range b.Queues {
 		queueNames = append(queueNames, queueName)
 	}
 	return queueNames
 }
 
-func AddPendingJob(queueName string, job QueueJob) error {
-	queue, err := GetQueue(queueName)
+func (b *Broker) AddPendingJob(queueName string, job QueueJob) error {
+	queue, err := b.GetQueue(queueName)
 	if err != nil {
 		return err
 	}
