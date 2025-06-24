@@ -5,9 +5,11 @@ import (
 	"log"
 	"net/http"
 
-	broker "github.com/gabriel-rp/go-broker/internal/broker"
+	"github.com/gabriel-rp/go-broker/internal/broker"
 	"github.com/google/uuid"
 )
+
+var Broker broker.Broker
 
 type JobResponse struct {
 	Job        broker.QueueJob `json:"job,omitempty"`
@@ -39,14 +41,14 @@ type CompleteJobPayload struct {
 
 func listQueues(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	queueNames := broker.ListQueues()
+	queueNames := Broker.ListQueues()
 	json.NewEncoder(w).Encode(queueNames)
 }
 
 func listJobs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	queueName := r.FormValue("queue")
-	queue, err := broker.GetQueue(queueName)
+	queue, err := Broker.GetQueue(queueName)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -87,7 +89,7 @@ func getJob(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	queueName := r.URL.Query().Get("queue")
-	queue, err := broker.GetQueue(queueName)
+	queue, err := Broker.GetQueue(queueName)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -111,7 +113,7 @@ func completeJob(w http.ResponseWriter, r *http.Request) {
 	var queue *broker.Queue
 	json.NewDecoder(r.Body).Decode(&completeJob)
 
-	queue, err := broker.GetQueue(completeJob.QueueName)
+	queue, err := Broker.GetQueue(completeJob.QueueName)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -133,7 +135,7 @@ func completeJob(w http.ResponseWriter, r *http.Request) {
 func addQueue(w http.ResponseWriter, r *http.Request) {
 	var createQueue AddQueuePayload
 	json.NewDecoder(r.Body).Decode(&createQueue)
-	if err := broker.CreateQueue(createQueue.Name); err != nil {
+	if err := Broker.CreateQueue(createQueue.Name); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -146,7 +148,7 @@ func addJob(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&createJob)
 	queueJob := broker.NewQueueJob(broker.Job{Payload: createJob.Payload})
 
-	err := broker.AddPendingJob(createJob.QueueName, queueJob)
+	err := Broker.AddPendingJob(createJob.QueueName, queueJob)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -157,6 +159,8 @@ func addJob(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	mux := http.NewServeMux()
+
+	Broker = broker.NewBroker()
 
 	mux.HandleFunc("POST /create_queue", addQueue)
 	mux.HandleFunc("POST /job", addJob)
