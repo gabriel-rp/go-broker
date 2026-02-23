@@ -114,6 +114,7 @@ func TestDequeueJob(t *testing.T) {
 	assert.Equal(t, 1, queue.PendingJobs.Size())
 	assert.Equal(t, 1, len(queue.RunningJobs))
 	assert.Equal(t, 0, len(queue.CompletedJobs))
+
 	// Successful processing
 	queue.CompleteJob(queueJob.UUID, JobStatusSucceeded)
 	assert.Equal(t, 1, queue.PendingJobs.Size())

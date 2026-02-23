@@ -2,10 +2,10 @@
 
 set -ex
 
-curl -d '{"name":"queue1"}' -H 'Content-Type: application/json' localhost:8086/create_queue
-curl -d '{"name":"queue2"}' -H 'Content-Type: application/json' localhost:8086/create_queue
-curl -d '{"name":"queue3"}' -H 'Content-Type: application/json' localhost:8086/create_queue
-curl -d '{"name":"queue4"}' -H 'Content-Type: application/json' localhost:8086/create_queue
+curl -d '{"name":"queue1"}' -H 'Content-Type: application/json' localhost:8086/add_queue
+curl -d '{"name":"queue2"}' -H 'Content-Type: application/json' localhost:8086/add_queue
+curl -d '{"name":"queue3"}' -H 'Content-Type: application/json' localhost:8086/add_queue
+curl -d '{"name":"queue4"}' -H 'Content-Type: application/json' localhost:8086/add_queue
 
 curl -H 'Content-Type: application/json' localhost:8086/queues
 
@@ -27,5 +27,4 @@ sleep 1
 curl -d "{\"uuid\": $(echo $JOB_1| jq '.uuid'), \"queue_name\": \"queue1\", \"status\": \"succeeded\"}" -H 'Content-Type: application/json' 'localhost:8086/complete_job'
 curl -H 'Content-Type: application/json' 'localhost:8086/jobs?queue=queue1'
 
-curl -H 'Content-Type: application/json' 'localhost:8086/complete_job'
 curl -H 'Content-Type: application/json' 'localhost:8086/jobs?queue=queue1'

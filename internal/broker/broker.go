@@ -28,9 +28,9 @@ type QueueJob struct {
 }
 type Queue struct {
 	Name          string
-	PendingJobs   pkg.Stack[QueueJob]
-	CompletedJobs []QueueJob
-	RunningJobs   map[uuid.UUID]QueueJob
+	PendingJobs   pkg.Stack[*QueueJob]
+	CompletedJobs []*QueueJob
+	RunningJobs   map[uuid.UUID]*QueueJob
 }
 
 type Broker struct {
@@ -43,8 +43,8 @@ func NewBroker() Broker {
 	}
 }
 
-func NewQueueJob(job Job) QueueJob {
-	return QueueJob{
+func NewQueueJob(job Job) *QueueJob {
+	return &QueueJob{
 		Job:            job,
 		UUID:           uuid.New(),
 		Attempts:       0,
@@ -57,13 +57,13 @@ func NewQueueJob(job Job) QueueJob {
 func NewQueue(queueName string) Queue {
 	return Queue{
 		Name:          queueName,
-		PendingJobs:   pkg.NewStack[QueueJob](),
-		CompletedJobs: make([]QueueJob, 0),
-		RunningJobs:   make(map[uuid.UUID]QueueJob, 0),
+		PendingJobs:   pkg.NewStack[*QueueJob](),
+		CompletedJobs: make([]*QueueJob, 0),
+		RunningJobs:   make(map[uuid.UUID]*QueueJob, 0),
 	}
 }
 
-func (q *Queue) DequeueJob() (QueueJob, bool) {
+func (q *Queue) DequeueJob() (*QueueJob, bool) {
 	queueJob, ok := q.PendingJobs.Pop()
 	if !ok {
 		return queueJob, ok
@@ -114,7 +114,7 @@ func (b *Broker) ListQueues() []string {
 	return queueNames
 }
 
-func (b *Broker) AddPendingJob(queueName string, job QueueJob) error {
+func (b *Broker) AddPendingJob(queueName string, job *QueueJob) error {
 	queue, err := b.GetQueue(queueName)
 	if err != nil {
 		return err
